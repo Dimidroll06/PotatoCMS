@@ -163,7 +163,7 @@ const updateCollection = async (req, res) => {
 const deleteCollection = async (req, res) => {
     const { id } = req.params;
     const sequelize = req.app.get('sequelize');
-    const { Collection, CollectionField } = sequelize.models;
+    const { Collection } = sequelize.models;
 
     const transaction = await sequelize.transaction();
     const queryInterface = sequelize.getQueryInterface();
