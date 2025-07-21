@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Op } = require('sequelize');
 
 const TYPE_MAP = {
     string: DataTypes.STRING,
@@ -109,7 +109,7 @@ const updateCollection = async (req, res) => {
     const { id } = req.params;
     const { label, fields } = req.body;
     const sequelize = req.app.get('sequelize');
-    const { Collection, CollectionField } = sequelize.models;
+    const { Collection, CollectionField, Relationship } = sequelize.models;
 
     const transaction = await sequelize.transaction();
     const queryInterface = sequelize.getQueryInterface();
@@ -141,6 +141,16 @@ const updateCollection = async (req, res) => {
         for (const fieldName in currentFieldMap) {
             if (!newFieldMap[fieldName]) {
                 await queryInterface.removeColumn(collection.name, fieldName, { transaction });
+
+                if (currentFieldMap[fieldName].type === 'relation') {
+                    await Relationship.destroy({
+                        where: {
+                            fromCollection: collection.name,
+                            field: fieldName
+                        }
+                    }, { transaction });
+                }
+
                 await CollectionField.destroy({
                     where: { id: currentFieldMap[fieldName].id },
                     transaction
@@ -227,7 +237,7 @@ const updateCollection = async (req, res) => {
 const deleteCollection = async (req, res) => {
     const { id } = req.params;
     const sequelize = req.app.get('sequelize');
-    const { Collection } = sequelize.models;
+    const { Collection, CollectionField, Relationship } = sequelize.models;
 
     const transaction = await sequelize.transaction();
     const queryInterface = sequelize.getQueryInterface();
@@ -235,6 +245,20 @@ const deleteCollection = async (req, res) => {
     try {
         const collection = await Collection.findByPk(id, { transaction });
         if (!collection) return res.status(404).json({ error: 'Collection not found' });
+
+        await Relationship.destroy({
+            where: {
+                [Op.or]: [
+                    { fromCollection: collection.name },
+                    { toCollection: collection.name }
+                ]
+            }
+        }, { transaction });
+
+        await CollectionField.destroy({
+            where: { collectionId: collection.id },
+            transaction
+        });
 
         await queryInterface.dropTable(collection.name, { transaction });
 
