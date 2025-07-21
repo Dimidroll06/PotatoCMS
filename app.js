@@ -4,7 +4,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 
 const setupDatabase = require('./config/database');
-const routes = require('./routes/index');
+const collectionRoutes = require('./routes/collectionRoutes');
 
 /**
  * Создаёт и настраивает базовый сервер express
@@ -26,7 +26,8 @@ const createApp = async () => {
 
     // Роуты
     const routesUrl = process.env.ROUTES_URL || '/api';
-    app.use(routesUrl, routes);
+    const router = require('./routes/index');
+    app.use(routesUrl, router);
 
     return app;
 };
