@@ -5,7 +5,8 @@ const TYPE_MAP = {
     text: DataTypes.TEXT,
     boolean: DataTypes.BOOLEAN,
     number: DataTypes.FLOAT,
-    date: DataTypes.DATE
+    date: DataTypes.DATE,
+    relation: DataTypes.INTEGER
 };
 
 const getAllCollections = async (req, res) => {
@@ -48,6 +49,10 @@ const createCollection = async (req, res) => {
     const queryInterface = sequelize.getQueryInterface();
 
     try {
+        const allCollections = await Collection.findAll({ raw: true });
+        const collectionNameMap = Object.fromEntries(
+            allCollections.map(c => [c.id, c.name])
+        );
         const collection = await Collection.create({ name, label }, { transaction });
 
         const fieldRecords = await CollectionField.bulkCreate(
@@ -56,11 +61,26 @@ const createCollection = async (req, res) => {
         );
 
         const attributes = {};
+        const foreignKeys = {};
         fields.forEach(field => {
-            attributes[field.name] = {
-                type: TYPE_MAP[field.type],
-                allowNull: !field.required
-            };
+            if (field.type === 'relation' && field.targetCollectionId) {
+                const targetName = collectionNameMap[field.targetCollectionId];
+                if (!targetName) throw new Error(`Target collection not found for ID: ${field.targetCollectionId}`);
+
+                foreignKeys[field.name] = {
+                    type: TYPE_MAP[field.type],
+                    allowNull: !field.required,
+                    references: {
+                        model: targetName,
+                        key: 'id'
+                    }
+                };
+            } else {
+                attributes[field.name] = {
+                    type: TYPE_MAP[field.type],
+                    allowNull: !field.required
+                };
+            }
         });
 
         await queryInterface.createTable(name, {
@@ -70,6 +90,7 @@ const createCollection = async (req, res) => {
                 primaryKey: true
             },
             ...attributes,
+            ...foreignKeys,
             createdAt: DataTypes.DATE,
             updatedAt: DataTypes.DATE
         }, { transaction });
@@ -94,6 +115,11 @@ const updateCollection = async (req, res) => {
     const queryInterface = sequelize.getQueryInterface();
 
     try {
+        const allCollections = await Collection.findAll({ raw: true });
+        const collectionNameMap = Object.fromEntries(
+            allCollections.map(c => [c.id, c.name])
+        );
+
         const collection = await Collection.findByPk(id, { transaction });
         if (!collection) return res.status(404).json({ error: 'Collection not found' });
 
@@ -123,28 +149,66 @@ const updateCollection = async (req, res) => {
         }
 
         for (const field of fields) {
-            if (!currentFieldMap[field.name]) {
-                await queryInterface.addColumn(collection.name, field.name, {
-                    type: TYPE_MAP[field.type],
-                    allowNull: !field.required
-                }, { transaction });
+            if (field.type === 'relation' && field.targetCollectionId) {
+                const targetName = collectionNameMap[field.targetCollectionId];
+                if (!targetName) throw new Error(`Target collection not found for ID: ${field.targetCollectionId}`);
 
-                await CollectionField.create({
-                    ...field,
-                    collectionId: collection.id
-                }, { transaction });
+                if (!currentFieldMap[field.name]) {
+                    await queryInterface.addColumn(collection.name, field.name, {
+                        type: TYPE_MAP[field.type],
+                        allowNull: !field.required,
+                        references: {
+                            model: targetName,
+                            key: 'id'
+                        }
+                    }, { transaction });
+
+                    await CollectionField.create({
+                        ...field,
+                        collectionId: collection.id
+                    }, { transaction });
+                } else {
+                    await queryInterface.changeColumn(collection.name, field.name, {
+                        type: TYPE_MAP[field.type],
+                        allowNull: !field.required,
+                        references: {
+                            model: targetName,
+                            key: 'id'
+                        }
+                    }, { transaction });
+
+                    await CollectionField.update({
+                        ...field
+                    }, {
+                        where: { id: currentFieldMap[fieldName].id },
+                        transaction
+                    });
+                }
             } else {
-                await queryInterface.changeColumn(collection.name, field.name, {
-                    type: TYPE_MAP[field.type],
-                    allowNull: !field.required
-                }, { transaction });
+                if (!currentFieldMap[field.name]) {
+                    await queryInterface.addColumn(collection.name, field.name, {
+                        type: TYPE_MAP[field.type],
+                        allowNull: !field.required
+                    }, { transaction });
 
-                await CollectionField.update({
-                    ...field
-                }, {
-                    where: { id: currentFieldMap[fieldName].id },
-                    transaction
-                })
+                    await CollectionField.create({
+                        ...field,
+                        collectionId: collection.id
+                    }, { transaction });
+                } else {
+                    await queryInterface.changeColumn(collection.name, field.name, {
+                        type: TYPE_MAP[field.type],
+                        allowNull: !field.required
+                    }, { transaction });
+
+                    await CollectionField.update({
+                        ...field
+                    }, {
+                        where: { id: currentFieldMap[fieldName].id },
+                        transaction
+                    })
+                }
+
             }
         }
 

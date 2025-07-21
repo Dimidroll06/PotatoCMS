@@ -19,6 +19,18 @@ module.exports = (sequelize) => {
             type: DataTypes.BOOLEAN,
             defaultValue: false,
         },
+        relationType: {
+            type: DataTypes.ENUM('many-to-one', 'one-to-many', 'one-to-one'),
+            allowNull: true
+        },
+        targetCollectionId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            references: {
+                model: 'Collections',
+                key: 'id'
+            }
+        },
         createdAt: {
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW,
@@ -33,6 +45,10 @@ module.exports = (sequelize) => {
         CollectionField.belongsTo(models.Collection, {
             foreignKey: 'collectionId',
             as: 'collection',
+        });
+        CollectionField.belongsTo(models.Collection, {
+            foreignKey: 'targetCollectionId',
+            as: 'targetCollection'
         });
     };
 
