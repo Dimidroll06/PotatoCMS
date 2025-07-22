@@ -1,5 +1,9 @@
 const express = require('express');
 const {
+    validateCreateCollection,
+    validateUpdateCollection,
+} = require('../validators/collectionValidator');
+const {
     getAllCollections,
     getCollectionById,
     createCollection,
@@ -10,8 +14,8 @@ const router = express.Router();
 
 router.get('/', getAllCollections);
 router.get('/:id', getCollectionById);
-router.post('/', createCollection);
-router.put('/:id', updateCollection);
+router.post('/', validateCreateCollection, createCollection);
+router.put('/:id', validateUpdateCollection, updateCollection);
 router.delete('/:id', deleteCollection);
 
 module.exports = router;
