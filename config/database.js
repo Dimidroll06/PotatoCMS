@@ -24,6 +24,14 @@ const setupDatabase = async () => {
         password,
         database,
         logging: false,
+        retry: {
+            max: 5,
+            match: [
+                Sequelize.TimeoutError,
+                Sequelize.ConnectionError,
+                'SQLITE_BUSY'
+            ]
+        }
     });
 
     // Проверка на подключение, дабы не произошла непредвиденная ошибка при неправильной настроке БД.

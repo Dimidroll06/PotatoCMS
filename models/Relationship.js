@@ -23,7 +23,6 @@ module.exports = (sequelize) => {
             allowNull: false
         }
     }, {
-        tableName: 'relationships',
         indexes: [
             { fields: ['fromCollection', 'fromId'] },
             { fields: ['toCollection', 'toId'] },

@@ -190,7 +190,7 @@ const updateCollection = async (req, res) => {
                     await CollectionField.update({
                         ...field
                     }, {
-                        where: { id: currentFieldMap[fieldName].id },
+                        where: { id: currentFieldMap[field.name].id },
                         transaction
                     });
                 }
@@ -214,7 +214,7 @@ const updateCollection = async (req, res) => {
                     await CollectionField.update({
                         ...field
                     }, {
-                        where: { id: currentFieldMap[fieldName].id },
+                        where: { id: currentFieldMap[field.name].id },
                         transaction
                     })
                 }
@@ -252,8 +252,9 @@ const deleteCollection = async (req, res) => {
                     { fromCollection: collection.name },
                     { toCollection: collection.name }
                 ]
-            }
-        }, { transaction });
+            },
+            transaction
+        });
 
         await CollectionField.destroy({
             where: { collectionId: collection.id },
@@ -267,6 +268,7 @@ const deleteCollection = async (req, res) => {
         await transaction.commit();
         res.json({ message: 'Collection deleted' });
     } catch (error) {
+        console.error(error)
         await transaction.rollback();
         res.status(500).json({ error: error.message });
     }
