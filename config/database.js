@@ -1,4 +1,5 @@
 const { Sequelize } = require('sequelize');
+const loadModels = require('../models/index');
 
 /**
  * Инициализирует базу данных, а так же проверяет её доступность
@@ -29,6 +30,7 @@ const setupDatabase = async () => {
     try {
         await sequelize.authenticate();
         console.log('✅ Успешное подключение к базе данных.');
+        await loadModels(sequelize);
         return sequelize;
     } catch (error) {
         console.error('❌ Не удалось подключиться к базе данных:', error.message);
