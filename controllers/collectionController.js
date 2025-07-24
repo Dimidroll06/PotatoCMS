@@ -147,8 +147,9 @@ const updateCollection = async (req, res) => {
                         where: {
                             fromCollection: collection.name,
                             field: fieldName
-                        }
-                    }, { transaction });
+                        },
+                        transaction
+                    });
                 }
 
                 await CollectionField.destroy({
@@ -228,6 +229,7 @@ const updateCollection = async (req, res) => {
         }));
 
     } catch (error) {
+        console.error(error);
         await transaction.rollback();
         res.status(500).json({ error: error.message });
     }
