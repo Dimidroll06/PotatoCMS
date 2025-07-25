@@ -3,7 +3,33 @@ const { User } = require('../models');
 const passport = require('passport');
 
 const register = async (req, res) => {
+    const { username, password } = req.body;
 
+    const match = await User.findOne({ where: { username } });
+    if (match) {
+        return res.status(400).json({
+            error: 'Username already exists'
+        });
+    }
+
+    try {
+        const user = await User.create({
+            username,
+            password
+        });
+
+        return res.status(201).json({
+            user: {
+                id: user.id,
+                username: user.username
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            error: 'Server error'
+        });
+    }
 };
 
 const login = async (req, res, next) => {
@@ -76,6 +102,7 @@ const logout = async (req, res) => {
 };
 
 module.exports = {
+    register,
     login,
     refresh,
     logout
