@@ -3,7 +3,7 @@ const Joi = require('joi');
 const fieldSchema = Joi.object({
     name: Joi.string()
         .required()
-        .regex(/^[a-zA-Z][a-zA-Z0-9_]*$/)
+        .alphanum
         .message('Field name must be alphanumeric and start with a letter')
         .max(50),
 
@@ -23,7 +23,7 @@ const fieldSchema = Joi.object({
 const createCollectionSchema = Joi.object({
     name: Joi.string()
         .required()
-        .regex(/^[a-zA-Z][a-zA-Z0-9_]*$/)
+        .alphanum()
         .message('Collection name must be alphanumeric and start with a letter')
         .max(50)
         .lowercase(),

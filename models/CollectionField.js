@@ -39,6 +39,9 @@ module.exports = (sequelize) => {
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW,
         },
+    }, {
+        timestamps: true,
+        tableName: 'cms_collection_fields',
     });
 
     CollectionField.associate = (models) => {

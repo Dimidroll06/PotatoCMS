@@ -19,6 +19,7 @@ module.exports = (sequelize) => {
         },
     }, {
         timestamps: true,
+        tableName: 'cms_users',
     });
 
     User.addHook('beforeCreate', (user) => {

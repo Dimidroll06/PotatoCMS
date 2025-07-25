@@ -23,6 +23,8 @@ module.exports = (sequelize) => {
             allowNull: false
         }
     }, {
+        timestamps: false,
+        tableName: 'cms_translations',
         indexes: [
             { fields: ['collectionName', 'entryId', 'field', 'locale'], unique: true },
             { fields: ['collectionName', 'entryId'] }

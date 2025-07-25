@@ -23,6 +23,8 @@ module.exports = (sequelize) => {
             allowNull: false
         }
     }, {
+        timestamps: false,
+        tableName: 'cms_relationships',
         indexes: [
             { fields: ['fromCollection', 'fromId'] },
             { fields: ['toCollection', 'toId'] },

@@ -25,6 +25,7 @@ module.exports = (sequelize) => {
         },
     }, {
         timestamps: true,
+        tableName: 'cms_collections',
     });
 
     Collection.associate = (models) => {
