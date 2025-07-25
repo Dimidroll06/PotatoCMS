@@ -19,6 +19,10 @@ module.exports = (sequelize) => {
             type: DataTypes.BOOLEAN,
             defaultValue: false,
         },
+        localized: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
+        },
         targetCollectionId: {
             type: DataTypes.INTEGER,
             allowNull: true,
