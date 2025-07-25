@@ -1,9 +1,7 @@
-// controllers/relationshipController.js
 const { QueryTypes } = require('sequelize');
+const { sequelize, Collection, CollectionField, Relationship } = require('../models');
 
 const connectItems = async (req, res) => {
-    const sequelize = req.app.get('sequelize');
-    const { Collection, CollectionField, Relationship } = sequelize.models;
     const { collection: fromCollectionLabel, id: fromId, field } = req.params;
     const { ids } = req.body;
 
@@ -78,8 +76,6 @@ const connectItems = async (req, res) => {
 };
 
 const disconnectItems = async (req, res) => {
-    const sequelize = req.app.get('sequelize');
-    const { Relationship } = sequelize.models;
     const { collection: fromCollectionLabel, id: fromId, field } = req.params;
     const { ids } = req.body;
 

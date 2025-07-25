@@ -1,5 +1,6 @@
 require('dotenv').config();
 const createApp = require('./app');
+const { sequelize, testConnection } = require('./config/database');
 const PORT = process.env.PORT || 3000;
 
 /**
@@ -7,6 +8,10 @@ const PORT = process.env.PORT || 3000;
  */
 const startServer = async () => {
     const app = await createApp();
+
+    // Подключение к БД
+    await testConnection();
+    await sequelize.sync({});
 
     app.listen(PORT, () => {
         console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);

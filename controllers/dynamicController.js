@@ -1,4 +1,5 @@
 const { Op, DataTypes } = require('sequelize');
+const { sequelize, Collection, CollectionField, Relationship, Translation } = require('../models');
 const { buildJoiSchema, getCollectionFields } = require('../validators/dynamicValidator');
 
 const defineModel = (sequelize, collection) => {
@@ -32,8 +33,6 @@ const defineModel = (sequelize, collection) => {
 };
 
 const getModelOr404 = async (sequelize, label, res) => {
-    const { Collection, CollectionField } = sequelize.models;
-
     const collection = await Collection.findOne({
         where: { label: label.toLowerCase() },
         include: [{ model: CollectionField, as: 'fields' }]
@@ -55,7 +54,6 @@ const getModelOr404 = async (sequelize, label, res) => {
 };
 
 const addRelations = async (sequelize, collectionName, item, fieldsToPopulate, options = {}) => {
-    const { Relationship, Collection } = sequelize.models;
     const { locale } = options;
     const result = {};
 
@@ -117,8 +115,6 @@ const addRelations = async (sequelize, collectionName, item, fieldsToPopulate, o
 };
 
 const getLocalizedFields = async (sequelize, collectionName, entryId, locale) => {
-    const { Translation } = sequelize.models;
-
     const translations = await Translation.findAll({
         where: {
             collectionName,
@@ -138,7 +134,6 @@ const getLocalizedFields = async (sequelize, collectionName, entryId, locale) =>
 const getAll = async (req, res) => {
     const { label } = req.params;
     const { populate, locale } = req.query;
-    const sequelize = req.app.get('sequelize');
 
     try {
         const Model = await getModelOr404(sequelize, label, res);
@@ -179,7 +174,6 @@ const getAll = async (req, res) => {
 const getById = async (req, res) => {
     const { label, id } = req.params;
     const { populate, locale } = req.query;
-    const sequelize = req.app.get('sequelize');
 
     try {
         const Model = await getModelOr404(sequelize, label, res);
@@ -214,8 +208,6 @@ const getById = async (req, res) => {
 const translate = async (req, res) => {
     const { label, id } = req.params;
     const { locale, ...fields } = req.body;
-    const sequelize = req.app.get('sequelize');
-    const { Translation } = sequelize.models;
     const transaction = await sequelize.transaction();
 
     if (!locale) {
@@ -249,98 +241,95 @@ const translate = async (req, res) => {
 
         await transaction.commit();
         res.json({ message: 'Translations saved' });
-    }  catch (error) {
+    } catch (error) {
         await transaction.rollback();
         res.status(500).json({ error: error.message });
     }
 };
 
 const createItem = async (req, res) => {
-        const { label } = req.params;
-        const sequelize = req.app.get('sequelize');
+    const { label } = req.params;
 
-        try {
-            const Model = await getModelOr404(sequelize, label, res);
-            if (!Model) return;
+    try {
+        const Model = await getModelOr404(sequelize, label, res);
+        if (!Model) return;
 
-            const collectionData = await getCollectionFields(sequelize, label);
-            if (!collectionData) {
-                return res.status(404).json({ error: `Collection "${label}" not found` });
-            }
-
-            const schema = buildJoiSchema(collectionData.fields);
-            const { error, value } = schema.validate(req.body, { abortEarly: false });
-
-            if (error) {
-                const messages = error.details.map(d => d.message);
-                return res.status(400).json({ error: 'Validation failed', details: messages });
-            }
-
-            const newItem = await Model.create(value);
-            res.status(201).json(newItem);
-        } catch (error) {
-            res.status(400).json({ error: error.message });
+        const collectionData = await getCollectionFields(sequelize, label);
+        if (!collectionData) {
+            return res.status(404).json({ error: `Collection "${label}" not found` });
         }
-    };
 
-    const updateItem = async (req, res) => {
-        const { label, id } = req.params;
-        const sequelize = req.app.get('sequelize');
+        const schema = buildJoiSchema(collectionData.fields);
+        const { error, value } = schema.validate(req.body, { abortEarly: false });
 
-        try {
-            const Model = await getModelOr404(sequelize, label, res);
-            if (!Model) return;
-
-            const item = await Model.findByPk(id);
-            if (!item) {
-                return res.status(404).json({ error: 'Item not found' });
-            }
-
-            const collectionData = await getCollectionFields(sequelize, label);
-            if (!collectionData) {
-                return res.status(404).json({ error: `Collection "${label}" not found` });
-            }
-
-            const updateSchema = buildJoiSchema(collectionData.fields).options({ allowUnknown: true });
-            const { error, value } = updateSchema.validate(req.body, { abortEarly: false });
-
-            if (error) {
-                const messages = error.details.map(d => d.message);
-                return res.status(400).json({ error: 'Validation failed', details: messages });
-            }
-
-            await item.update(req.body);
-            res.json(item);
-        } catch (error) {
-            res.status(400).json({ error: error.message });
+        if (error) {
+            const messages = error.details.map(d => d.message);
+            return res.status(400).json({ error: 'Validation failed', details: messages });
         }
-    };
 
-    const deleteItem = async (req, res) => {
-        const { label, id } = req.params;
-        const sequelize = req.app.get('sequelize');
-
-        try {
-            const Model = await getModelOr404(sequelize, label, res);
-            if (!Model) return;
-
-            const item = await Model.findByPk(id);
-            if (!item) {
-                return res.status(404).json({ error: 'Item not found' });
-            }
-
-            await item.destroy();
-            res.json({ message: 'Item deleted' });
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    };
-
-    module.exports = {
-        getAll,
-        getById,
-        translate,
-        createItem,
-        updateItem,
-        deleteItem,
+        const newItem = await Model.create(value);
+        res.status(201).json(newItem);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
     }
+};
+
+const updateItem = async (req, res) => {
+    const { label, id } = req.params;
+
+    try {
+        const Model = await getModelOr404(sequelize, label, res);
+        if (!Model) return;
+
+        const item = await Model.findByPk(id);
+        if (!item) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+
+        const collectionData = await getCollectionFields(sequelize, label);
+        if (!collectionData) {
+            return res.status(404).json({ error: `Collection "${label}" not found` });
+        }
+
+        const updateSchema = buildJoiSchema(collectionData.fields).options({ allowUnknown: true });
+        const { error, value } = updateSchema.validate(req.body, { abortEarly: false });
+
+        if (error) {
+            const messages = error.details.map(d => d.message);
+            return res.status(400).json({ error: 'Validation failed', details: messages });
+        }
+
+        await item.update(req.body);
+        res.json(item);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+const deleteItem = async (req, res) => {
+    const { label, id } = req.params;
+
+    try {
+        const Model = await getModelOr404(sequelize, label, res);
+        if (!Model) return;
+
+        const item = await Model.findByPk(id);
+        if (!item) {
+            return res.status(404).json({ error: 'Item not found' });
+        }
+
+        await item.destroy();
+        res.json({ message: 'Item deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+module.exports = {
+    getAll,
+    getById,
+    translate,
+    createItem,
+    updateItem,
+    deleteItem,
+}

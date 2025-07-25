@@ -1,29 +1,24 @@
+const { sequelize } = require('../config/database');
 const fs = require('fs');
 const path = require('path');
 
-module.exports = (sequelize) => {
-    const modelFiles = fs.readdirSync(__dirname).filter(file => {
-        return file !== 'index.js' && file.endsWith('.js');
-    });
+const modelFiles = fs.readdirSync(__dirname).filter(file => {
+    return file !== 'index.js' && file.endsWith('.js');
+});
 
-    const models = {};
+const models = {};
 
-    console.log('Подгружаем модели');
+// Инициализация моделей
+modelFiles.forEach(file => {
+    const model = require(path.join(__dirname, file))(sequelize);
+    models[model.name] = model;
+});
 
-    // Инициализация моделей
-    modelFiles.forEach(file => {
-        const model = require(path.join(__dirname, file))(sequelize);
-        models[model.name] = model;
-    });
+// Вызов ассоциаций
+Object.values(models).forEach(model => {
+    if (model.associate) {
+        model.associate(models);
+    }
+});
 
-    // Вызов ассоциаций
-    Object.values(models).forEach(model => {
-        if (model.associate) {
-            model.associate(models);
-        }
-    });
-
-    sequelize.sync();
-
-    return models;
-};
+module.exports = { ...models, sequelize };

@@ -1,4 +1,5 @@
 const { DataTypes, Op } = require('sequelize');
+const { sequelize, Collection, CollectionField, Relationship } = require('../models');
 
 const TYPE_MAP = {
     string: DataTypes.STRING,
@@ -10,8 +11,6 @@ const TYPE_MAP = {
 };
 
 const getAllCollections = async (req, res) => {
-    const sequelize = req.app.get('sequelize');
-    const { Collection, CollectionField } = sequelize.models;
 
     try {
         const collections = await Collection.findAll({
@@ -25,8 +24,6 @@ const getAllCollections = async (req, res) => {
 
 const getCollectionById = async (req, res) => {
     const { id } = req.params;
-    const sequelize = req.app.get('sequelize');
-    const { Collection, CollectionField } = sequelize.models;
 
     try {
         const collection = await Collection.findByPk(id, {
@@ -42,8 +39,6 @@ const getCollectionById = async (req, res) => {
 
 const createCollection = async (req, res) => {
     const { name, label, fields } = req.body;
-    const sequelize = req.app.get('sequelize');
-    const { Collection, CollectionField } = sequelize.models;
 
     const transaction = await sequelize.transaction();
     const queryInterface = sequelize.getQueryInterface();
@@ -108,8 +103,6 @@ const createCollection = async (req, res) => {
 const updateCollection = async (req, res) => {
     const { id } = req.params;
     const { label, fields } = req.body;
-    const sequelize = req.app.get('sequelize');
-    const { Collection, CollectionField, Relationship } = sequelize.models;
 
     const transaction = await sequelize.transaction();
     const queryInterface = sequelize.getQueryInterface();
@@ -238,8 +231,6 @@ const updateCollection = async (req, res) => {
 
 const deleteCollection = async (req, res) => {
     const { id } = req.params;
-    const sequelize = req.app.get('sequelize');
-    const { Collection, CollectionField, Relationship } = sequelize.models;
 
     const transaction = await sequelize.transaction();
     const queryInterface = sequelize.getQueryInterface();
