@@ -13,12 +13,6 @@ const fieldSchema = Joi.object({
 
     required: Joi.boolean().default(false),
 
-    relationType: Joi.when('type', {
-        is: 'relation',
-        then: Joi.string().valid('many-to-one', 'one-to-many', 'many-to-many'),
-        otherwise: Joi.forbidden()
-    }),
-
     targetCollectionId: Joi.when('type', {
         is: 'relation',
         then: Joi.number().integer().min(1).required(),

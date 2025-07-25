@@ -19,10 +19,6 @@ module.exports = (sequelize) => {
             type: DataTypes.BOOLEAN,
             defaultValue: false,
         },
-        relationType: {
-            type: DataTypes.ENUM('many-to-one', 'one-to-many', 'one-to-one'),
-            allowNull: true
-        },
         targetCollectionId: {
             type: DataTypes.INTEGER,
             allowNull: true,
