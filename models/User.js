@@ -17,6 +17,14 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             allowNull: false
         },
+        roleId: {
+            type: DataTypes.INTEGER,
+            references: {
+                model: 'Roles',
+                key: 'id'
+            },
+            defaultValue: 1
+        }
     }, {
         timestamps: true,
         tableName: 'cms_users',
@@ -35,6 +43,14 @@ module.exports = (sequelize) => {
             return false;
         }
     };
+
+    User.associate = (models) => {
+        User.belongsTo(models.Role, {
+            foreignKey: 'roleId',
+            as: 'role',
+            onDelete: 'SET DEFAULT'
+        });
+    }
 
     return User;
 };

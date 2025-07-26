@@ -1,6 +1,7 @@
 const { Op, DataTypes } = require('sequelize');
 const { sequelize, Collection, CollectionField, Relationship, Translation } = require('../models');
 const { buildJoiSchema, getCollectionFields } = require('../validators/dynamicValidator');
+const rbac = require('../utils/rbac');
 
 const defineModel = (sequelize, collection) => {
     const attributes = {};
@@ -222,6 +223,12 @@ const translate = async (req, res) => {
             return res.status(404).json({ error: 'Collection not found' });
         }
 
+        if (!rbac(collectionData.collectionName, 'translate', req)) {
+            return res.status(403).json({
+                error: "Access denied"
+            });
+        }
+
         const i18nFields = collectionData.fields
             .filter(f => f.localized)
             .map(f => f.name);
@@ -259,6 +266,12 @@ const createItem = async (req, res) => {
             return res.status(404).json({ error: `Collection "${label}" not found` });
         }
 
+        if (!rbac(collectionData.collectionName, 'create', req)) {
+            return res.status(403).json({
+                error: "Access denied"
+            });
+        }
+
         const schema = buildJoiSchema(collectionData.fields);
         const { error, value } = schema.validate(req.body, { abortEarly: false });
 
@@ -291,6 +304,12 @@ const updateItem = async (req, res) => {
             return res.status(404).json({ error: `Collection "${label}" not found` });
         }
 
+        if (!rbac(collectionData.collectionName, 'update', req)) {
+            return res.status(403).json({
+                error: "Access denied"
+            });
+        }
+
         const updateSchema = buildJoiSchema(collectionData.fields).options({ allowUnknown: true });
         const { error, value } = updateSchema.validate(req.body, { abortEarly: false });
 
@@ -312,6 +331,12 @@ const deleteItem = async (req, res) => {
     try {
         const Model = await getModelOr404(sequelize, label, res);
         if (!Model) return;
+
+        if (!rbac(Model.name, 'delete', req)) {
+            return res.status(403).json({
+                error: "Access denied"
+            });
+        }
 
         const item = await Model.findByPk(id);
         if (!item) {
